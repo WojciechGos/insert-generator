@@ -1,11 +1,10 @@
 const fs = require('fs')
 
-const fileName = 'inserts.sql'
-
-const quantityOfFacts = 100001
+const quantityOfFacts = 100
 const quantityOfDimension = 200
 const quantityOfGrades = 4
 const quantityOfDates = 9
+const batFile = 'script.bat'
 
 ////////////////////////////////// g1 //////////////////////////////////
 
@@ -155,7 +154,7 @@ const generate_insert = (name, data, quantity)=>{
             // jeżeli atrybut posiada dane z których można coś wylosować
             else if(arr.length !== 0){
                 let randIndex = getRandomInt(0,arr.length-1)
-                values += `'${arr[randIndex]}',`
+                values += `${arr[randIndex]},`
             }
             // w przeciwnym wypadku jest to pole id
             else{
@@ -166,36 +165,58 @@ const generate_insert = (name, data, quantity)=>{
         // usunięcie ostatniego przecinka
         values = values.slice(0, values.length-1)
 
-        insert = `INSERT INTO ${name} VALUES (${values});`
-        result += `${insert}\n`
+        // dodanie rekordu do wyniku
+        result += `${values}\n`
     }
-    result += '\n'
-    fs.appendFileSync(fileName, result)
+
+    // wyłuskanie nazw atrybutów z obiektu
+    let attributes = '' 
+    Object.keys(data).map(attr=>{
+        attributes += `${attr},\n`
+    })
+    // usunięcie ostatniego przecinka
+    attributes = attributes.slice(0, attributes.length-2)
+
+    const ctl_file = `
+LOAD DATA
+INFILE '.\\DATA\\${name}.txt'
+INSERT INTO TABLE ${name}
+FIELDS TERMINATED BY ","
+(
+${attributes}
+)
+`
+
+    const script = `sqlldr 'sys/.orcl as sysdba' CONTROL='.\\DATA\\${name}.ctl' LOG='.\\LOG\\${name}.log' BAD='.\\BAD\\${name}.bad'\n`
+    
+    fs.writeFileSync(`./DATA/${name}.ctl`, ctl_file)
+    fs.writeFileSync(`./DATA/${name}.txt`, result)
+    fs.appendFileSync(batFile,script)
 }
 
 /*
     Główna funckja która wywołuje funkcje generującą 
 */
 const main = ()=>{
-    fs.writeFileSync(fileName, '')
+    fs.writeFileSync(batFile, '')
 
-    // generate_insert('g1_wykladowca', g1_wykladowcy, quantityOfDimension)
-    // generate_insert('g1_student', g1_student, quantityOfDimension)
-    // generate_insert('g1_przedmiot', g1_przedmiot, quantityOfDimension)
+    generate_insert('g1_wykladowca', g1_wykladowcy, quantityOfDimension)
+    generate_insert('g1_student', g1_student, quantityOfDimension)
+    generate_insert('g1_przedmiot', g1_przedmiot, quantityOfDimension)
     // generate_insert('g1_termin', g1_termin, quantityOfDates)
     // generate_insert('g1_oceny', g1_oceny, quantityOfGrades)
     // generate_insert('g1_zaliczenie', g1_zaliczenie, quantityOfFacts)
 
-    generate_insert('g2_rok', g2_rok, quantityOfDates)
-    generate_insert('g2_miesiac', g2_miesiac, 10)
-    generate_insert('g2_dzien', g2_dzien, quantityOfDates)
+    // generate_insert('g2_rok', g2_rok, quantityOfDates)
+    // generate_insert('g2_miesiac', g2_miesiac, 10)
+    // generate_insert('g2_dzien', g2_dzien, quantityOfDates)
 
-    generate_insert('g2_stopien', g2_stopien, 3)
-    generate_insert('g2_grupa', g2_grupa, 8)
-    generate_insert('g2_wykladowca', g2_wykladowcy, quantityOfDimension)
-    generate_insert('g2_student', g2_student, quantityOfDimension)
-    generate_insert('g2_przedmiot', g2_przedmiot, quantityOfDimension)
-    generate_insert('g2_oceny', g2_oceny, quantityOfGrades)
-    generate_insert('g2_zaliczenie', g2_zaliczenie, quantityOfFacts)
+    // generate_insert('g2_stopien', g2_stopien, 3)
+    // generate_insert('g2_grupa', g2_grupa, 8)
+    // generate_insert('g2_wykladowca', g2_wykladowcy, quantityOfDimension)
+    // generate_insert('g2_student', g2_student, quantityOfDimension)
+    // generate_insert('g2_przedmiot', g2_przedmiot, quantityOfDimension)
+    // generate_insert('g2_oceny', g2_oceny, quantityOfGrades)
+    // generate_insert('g2_zaliczenie', g2_zaliczenie, quantityOfFacts)
 }
 main()
